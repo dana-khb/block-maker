@@ -1,0 +1,363 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-color: #f5f5f5;
+  --panel-bg: #ffffff;
+  --text-color: #333;
+  --border-color: #ddd;
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background-color: var(--panel-bg);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+header p {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+main {
+  display: flex;
+  flex: 1;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* Input Panel */
+.input-panel {
+  background-color: var(--panel-bg);
+  border-radius: 8px;
+  width: 320px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  color: var(--accent-color);
+  background-color: #f8f9fa;
+}
+
+.tab-btn.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.tab-content h2 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  color: #444;
+}
+
+.tab-content h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+/* Section headers with reset buttons */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #eee;
+}
+
+.section-header:first-of-type {
+  margin-top: 0;
+}
+
+.reset-btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #666;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+/* Highlighted input groups */
+.input-group.highlighted {
+  background-color: rgba(37, 99, 235, 0.1);
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-color);
+}
+
+.input-group.highlighted label {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.scroll-container {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.input-group {
+  margin-bottom: 0.75rem;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #555;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Expression input styling */
+.input-group input[type="text"] {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.8rem;
+}
+
+/* Computed value display */
+.computed-value {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--accent-color);
+  font-weight: 500;
+  margin-top: 0.2rem;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+/* Variable tags in labels */
+.var-tag {
+  display: inline-block;
+  background-color: #e8f0fe;
+  color: var(--accent-color);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-weight: 500;
+}
+
+/* Available variables panel */
+.variables-panel {
+  background-color: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.7rem;
+}
+
+.variables-panel h4 {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.variables-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.variables-list .var-tag {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.variables-list .var-tag:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+#generate-btn {
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--accent-color);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+#generate-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Pattern Panel */
+.pattern-panel {
+  flex: 1;
+  background-color: var(--panel-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  overflow: auto;
+}
+
+.pattern-panel h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#pattern-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 400px;
+  background-color: #fafafa;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+#pattern-container svg {
+  max-width: 100%;
+  height: auto;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Interactive curve highlighting */
+#pattern-container svg .interactive-curve {
+  cursor: pointer;
+  transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+#pattern-container svg .interactive-curve:hover {
+  stroke: var(--accent-color) !important;
+  stroke-width: 3 !important;
+}
+
+/* SVG element highlighting when input is focused */
+#pattern-container svg g.svg-highlighted line,
+#pattern-container svg g.svg-highlighted path {
+  stroke: var(--accent-color) !important;
+  stroke-width: 3 !important;
+}
+
+#pattern-container svg g.svg-highlighted circle {
+  fill: var(--accent-color) !important;
+  r: 4;
+}
+
+#pattern-container svg g.svg-highlighted text {
+  fill: var(--accent-color) !important;
+  font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  main {
+    flex-direction: column;
+  }
+
+  .input-panel {
+    width: 100%;
+    max-height: 50vh;
+  }
+
+  .scroll-container {
+    max-height: 30vh;
+  }
+}

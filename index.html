@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Block Maker - Trouser Pattern Generator</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Block Maker</h1>
+        <p>Trouser Pattern Generator</p>
+      </header>
+
+      <main>
+        <section class="input-panel">
+          <!-- Tab Navigation -->
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="measurements">Measurements</button>
+            <button class="tab-btn" data-tab="ease">Ease</button>
+            <button class="tab-btn" data-tab="curves">Curves</button>
+          </div>
+
+          <!-- Measurements Tab -->
+          <div class="tab-content active" id="measurements-tab">
+            <h2>Body Measurements (cm)</h2>
+            <form id="measurements-form">
+              <div class="input-group">
+                <label for="hip">Hip</label>
+                <input type="number" id="hip" value="96" step="0.1" min="60" max="150" data-svg-target="frame,Hip">
+              </div>
+              <div class="input-group">
+                <label for="waistToHip">Waist to Hip</label>
+                <input type="number" id="waistToHip" value="24" step="0.1" min="15" max="40" data-svg-target="Hip">
+              </div>
+              <div class="input-group">
+                <label for="waistToKnee">Waist to Knee</label>
+                <input type="number" id="waistToKnee" value="63" step="0.1" min="40" max="90" data-svg-target="Knee">
+              </div>
+              <div class="input-group">
+                <label for="waistToAnkle">Waist to Ankle</label>
+                <input type="number" id="waistToAnkle" value="96" step="0.1" min="70" max="130" data-svg-target="hemline">
+              </div>
+              <div class="input-group">
+                <label for="crotchDepth">Crotch Depth</label>
+                <input type="number" id="crotchDepth" value="29" step="0.1" min="20" max="45" data-svg-target="Crotch">
+              </div>
+              <div class="input-group">
+                <label for="waist">Waist</label>
+                <input type="number" id="waist" value="78" step="0.1" min="55" max="130" data-svg-target="front_waistline,back_waistline">
+              </div>
+              <div class="input-group">
+                <label for="hemline">Hemline Circumference</label>
+                <input type="number" id="hemline" value="46" step="0.1" min="30" max="80" data-svg-target="hemline">
+              </div>
+            </form>
+          </div>
+
+          <!-- Ease Tab -->
+          <div class="tab-content" id="ease-tab">
+            <h2>Ease Variables (px)</h2>
+            <div class="variables-panel">
+              <h4>Available Variables</h4>
+              <div class="variables-list" id="variables-list">
+                <span class="var-tag" data-var="hip">hip</span>
+                <span class="var-tag" data-var="hip_px">hip_px</span>
+                <span class="var-tag" data-var="waist">waist</span>
+                <span class="var-tag" data-var="waist_px">waist_px</span>
+                <span class="var-tag" data-var="waistToHip">waistToHip</span>
+                <span class="var-tag" data-var="waistToHip_px">waistToHip_px</span>
+                <span class="var-tag" data-var="crotchDepth">crotchDepth</span>
+                <span class="var-tag" data-var="crotchDepth_px">crotchDepth_px</span>
+                <span class="var-tag" data-var="hemline">hemline</span>
+                <span class="var-tag" data-var="hemline_px">hemline_px</span>
+                <span class="var-tag" data-var="frameWidth">frameWidth</span>
+                <span class="var-tag" data-var="X_center">X_center</span>
+              </div>
+            </div>
+            <div class="scroll-container">
+              <h3>Frame & Fit</h3>
+              <div class="input-group">
+                <label for="hip_ease">Hip Ease</label>
+                <input type="text" id="hip_ease" value="20" data-svg-target="frame">
+              </div>
+              <div class="input-group">
+                <label for="x_center_offset">X Center Offset</label>
+                <input type="text" id="x_center_offset" value="0" data-svg-target="center_line">
+              </div>
+              <div class="input-group">
+                <label for="crotch_ease">Crotch Ease</label>
+                <input type="text" id="crotch_ease" value="15" data-svg-target="Crotch">
+              </div>
+              <div class="input-group">
+                <label for="front_crotch_extension">Front Crotch Extension</label>
+                <input type="text" id="front_crotch_extension" value="hip_px / 16" data-svg-target="front_center_curve,crotch_extension">
+              </div>
+              <div class="input-group">
+                <label for="back_crotch_extension">Back Crotch Extension</label>
+                <input type="text" id="back_crotch_extension" value="hip_px / 8" data-svg-target="back_center_curve,crotch_extension">
+              </div>
+
+              <h3>Rise</h3>
+              <div class="input-group">
+                <label for="front_rise_x">Front Rise X</label>
+                <input type="text" id="front_rise_x" value="5" data-svg-target="front_center_curve,front_waistline">
+              </div>
+              <div class="input-group">
+                <label for="front_rise_y">Front Rise Y</label>
+                <input type="text" id="front_rise_y" value="10" data-svg-target="front_center_curve,front_waistline">
+              </div>
+              <div class="input-group">
+                <label for="back_rise">Back Rise</label>
+                <input type="text" id="back_rise" value="25" data-svg-target="back_center_curve,back_waistline">
+              </div>
+              <div class="input-group">
+                <label for="back_waist_offset">Back Waist Offset</label>
+                <input type="text" id="back_waist_offset" value="40" data-svg-target="back_center_curve,back_waistline">
+              </div>
+
+              <h3>Hem</h3>
+              <div class="input-group">
+                <label for="front_hem_ease">Front Hem Ease</label>
+                <input type="text" id="front_hem_ease" value="-10" data-svg-target="hemline">
+              </div>
+              <div class="input-group">
+                <label for="back_hem_ease">Back Hem Ease</label>
+                <input type="text" id="back_hem_ease" value="10" data-svg-target="hemline">
+              </div>
+
+              <h3>Knee</h3>
+              <div class="input-group">
+                <label for="front_knee_ease">Front Knee Ease</label>
+                <input type="text" id="front_knee_ease" value="10" data-svg-target="front_inseam,Knee">
+              </div>
+              <div class="input-group">
+                <label for="back_knee_ease">Back Knee Ease</label>
+                <input type="text" id="back_knee_ease" value="10" data-svg-target="back_inseam,back_seam_markers">
+              </div>
+
+              <h3>Sideseam Shaping</h3>
+              <div class="input-group">
+                <label for="sideseam_hip_ease">Sideseam Hip Ease</label>
+                <input type="text" id="sideseam_hip_ease" value="1" data-svg-target="front_sideseam">
+              </div>
+
+              <h3>Back Inseam Shaping</h3>
+              <div class="input-group">
+                <label for="back_inseam_hip_offset_x">Hip Offset X</label>
+                <input type="text" id="back_inseam_hip_offset_x" value="1.543" data-svg-target="back_inseam">
+              </div>
+              <div class="input-group">
+                <label for="back_inseam_hip_offset_y">Hip Offset Y</label>
+                <input type="text" id="back_inseam_hip_offset_y" value="0.141" data-svg-target="back_inseam">
+              </div>
+
+              <h3>Back Sideseam Shaping</h3>
+              <div class="input-group">
+                <label for="back_sideseam_thigh_offset_x">Thigh Offset X</label>
+                <input type="text" id="back_sideseam_thigh_offset_x" value="17.964" data-svg-target="back_sideseam">
+              </div>
+              <div class="input-group">
+                <label for="back_sideseam_thigh_offset_y">Thigh Offset Y</label>
+                <input type="text" id="back_sideseam_thigh_offset_y" value="178.229" data-svg-target="back_sideseam">
+              </div>
+            </div>
+          </div>
+
+          <!-- Curves Tab -->
+          <div class="tab-content" id="curves-tab">
+            <h2>Bezier Curve Controls</h2>
+            <div class="scroll-container">
+              <div class="section-header">
+                <h3>Crotch Curves</h3>
+                <button type="button" class="reset-btn" data-section="crotch">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="crotch">
+                <label for="front_crotch_h_tension">Front H Tension</label>
+                <input type="number" id="front_crotch_h_tension" value="0.7" step="0.05" min="0" max="2">
+              </div>
+              <div class="input-group" data-curve-section="crotch">
+                <label for="front_crotch_v_tension">Front V Tension</label>
+                <input type="number" id="front_crotch_v_tension" value="0.75" step="0.05" min="0" max="2">
+              </div>
+              <div class="input-group" data-curve-section="crotch">
+                <label for="back_crotch_h_tension">Back H Tension</label>
+                <input type="number" id="back_crotch_h_tension" value="0.8" step="0.05" min="0" max="2">
+              </div>
+              <div class="input-group" data-curve-section="crotch">
+                <label for="back_crotch_v_tension">Back V Tension</label>
+                <input type="number" id="back_crotch_v_tension" value="0.85" step="0.05" min="0" max="2">
+              </div>
+
+              <div class="section-header">
+                <h3>Front Waistline</h3>
+                <button type="button" class="reset-btn" data-section="front_waist">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="front_waist">
+                <label for="front_waist_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="front_waist_CP2_ratio_x" value="0.446" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_waist">
+                <label for="front_waist_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="front_waist_CP2_ratio_y" value="0.019" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_waist">
+                <label for="front_waist_P3_ratio_x">P3 X</label>
+                <input type="number" id="front_waist_P3_ratio_x" value="0.639" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_waist">
+                <label for="front_waist_CP3_ratio_x">CP3 X</label>
+                <input type="number" id="front_waist_CP3_ratio_x" value="0.831" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_waist">
+                <label for="front_waist_CP3_ratio_y">CP3 Y</label>
+                <input type="number" id="front_waist_CP3_ratio_y" value="-0.019" step="0.01">
+              </div>
+
+              <div class="section-header">
+                <h3>Back Waistline</h3>
+                <button type="button" class="reset-btn" data-section="back_waist">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="back_waist_CP2_ratio_x" value="-0.295" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="back_waist_CP2_ratio_y" value="0.077" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_P3_ratio_x">P3 X</label>
+                <input type="number" id="back_waist_P3_ratio_x" value="-0.489" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_P3_ratio_y">P3 Y</label>
+                <input type="number" id="back_waist_P3_ratio_y" value="0.103" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_CP3_ratio_x">CP3 X</label>
+                <input type="number" id="back_waist_CP3_ratio_x" value="-0.683" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_waist">
+                <label for="back_waist_CP3_ratio_y">CP3 Y</label>
+                <input type="number" id="back_waist_CP3_ratio_y" value="0.127" step="0.01">
+              </div>
+
+              <div class="section-header">
+                <h3>Front Inseam</h3>
+                <button type="button" class="reset-btn" data-section="front_inseam">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="front_inseam">
+                <label for="front_inseam_CP1_ratio_x">CP1 X</label>
+                <input type="number" id="front_inseam_CP1_ratio_x" value="0.1" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_inseam">
+                <label for="front_inseam_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="front_inseam_CP1_ratio_y" value="0.3" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_inseam">
+                <label for="front_inseam_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="front_inseam_CP2_ratio_x" value="0.404" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_inseam">
+                <label for="front_inseam_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="front_inseam_CP2_ratio_y" value="0.504" step="0.01">
+              </div>
+
+              <div class="section-header">
+                <h3>Front Sideseam</h3>
+                <button type="button" class="reset-btn" data-section="front_side">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg1_CP1_ratio_x">Seg1 CP1 X</label>
+                <input type="number" id="front_side_seg1_CP1_ratio_x" value="0.32" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg1_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="front_side_seg1_CP1_ratio_y" value="0.33" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg1_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="front_side_seg1_CP2_ratio_x" value="1.11" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg1_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="front_side_seg1_CP2_ratio_y" value="0.754" step="0.01">
+              </div>
+
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg2_CP1_ratio_x">Seg2 CP1 X</label>
+                <input type="number" id="front_side_seg2_CP1_ratio_x" value="0.052" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg2_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="front_side_seg2_CP1_ratio_y" value="0.4" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg2_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="front_side_seg2_CP2_ratio_x" value="0.569" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="front_side">
+                <label for="front_side_seg2_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="front_side_seg2_CP2_ratio_y" value="0.714" step="0.01">
+              </div>
+
+              <div class="section-header">
+                <h3>Back Inseam</h3>
+                <button type="button" class="reset-btn" data-section="back_inseam">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg1_CP1_ratio_x">Seg1 CP1 X</label>
+                <input type="number" id="back_inseam_seg1_CP1_ratio_x" value="0.355" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg1_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="back_inseam_seg1_CP1_ratio_y" value="0.261" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg1_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="back_inseam_seg1_CP2_ratio_x" value="1.052" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg1_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="back_inseam_seg1_CP2_ratio_y" value="0.826" step="0.01">
+              </div>
+
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg2_CP1_ratio_x">Seg2 CP1 X</label>
+                <input type="number" id="back_inseam_seg2_CP1_ratio_x" value="0.098" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg2_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="back_inseam_seg2_CP1_ratio_y" value="0.283" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg2_CP2_ratio_x">CP2 X</label>
+                <input type="number" id="back_inseam_seg2_CP2_ratio_x" value="0.708" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_inseam">
+                <label for="back_inseam_seg2_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="back_inseam_seg2_CP2_ratio_y" value="0.784" step="0.01">
+              </div>
+
+              <div class="section-header">
+                <h3>Back Sideseam</h3>
+                <button type="button" class="reset-btn" data-section="back_side">Reset</button>
+              </div>
+              <div class="input-group" data-curve-section="back_side">
+                <label for="back_side_seg1_CP2_ratio_x">Seg1 CP2 X</label>
+                <input type="number" id="back_side_seg1_CP2_ratio_x" value="0.415" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_side">
+                <label for="back_side_seg1_CP2_ratio_y">CP2 Y</label>
+                <input type="number" id="back_side_seg1_CP2_ratio_y" value="0.665" step="0.01">
+              </div>
+
+              <div class="input-group" data-curve-section="back_side">
+                <label for="back_side_seg2_CP1_ratio_x">Seg2 CP1 X</label>
+                <input type="number" id="back_side_seg2_CP1_ratio_x" value="0.306" step="0.01">
+              </div>
+              <div class="input-group" data-curve-section="back_side">
+                <label for="back_side_seg2_CP1_ratio_y">CP1 Y</label>
+                <input type="number" id="back_side_seg2_CP1_ratio_y" value="0.407" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="generate-btn">Generate Pattern</button>
+        </section>
+
+        <section class="pattern-panel">
+          <h2>Pattern Preview</h2>
+          <div id="pattern-container"></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
