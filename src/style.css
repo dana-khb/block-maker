@@ -21,9 +21,10 @@ body {
 }
 
 #app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 header {
@@ -45,6 +46,7 @@ header p {
 main {
   display: flex;
   flex: 1;
+  min-height: 0;
   gap: 1rem;
   padding: 1rem;
 }
@@ -58,7 +60,8 @@ main {
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 120px);
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Tabs */
@@ -100,7 +103,8 @@ main {
 }
 
 .tab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 .tab-content h2 {
@@ -169,7 +173,8 @@ main {
 }
 
 .scroll-container {
-  max-height: calc(100vh - 300px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 0.5rem;
 }
@@ -264,7 +269,7 @@ main {
   color: white;
 }
 
-#generate-btn {
+#export-btn {
   width: calc(100% - 2rem);
   margin: 1rem;
   padding: 0.75rem 1rem;
@@ -279,18 +284,21 @@ main {
   flex-shrink: 0;
 }
 
-#generate-btn:hover {
+#export-btn:hover {
   background-color: var(--accent-hover);
 }
 
 /* Pattern Panel */
 .pattern-panel {
   flex: 1;
+  min-height: 0;
   background-color: var(--panel-bg);
   border-radius: 8px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .pattern-panel h2 {
@@ -299,20 +307,27 @@ main {
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 #pattern-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 400px;
+  flex: 1;
+  min-height: 0;
+  position: relative;
   background-color: #fafafa;
   border-radius: 4px;
   padding: 1rem;
+  overflow: hidden;
 }
 
 #pattern-container svg {
-  max-width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 2rem);
+  max-height: calc(100% - 2rem);
+  width: auto;
   height: auto;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -346,6 +361,43 @@ main {
   font-weight: bold;
 }
 
+/* Seam Allowance Control */
+.seam-allowance-control {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sa-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sa-value-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  margin-left: 1.5rem;
+}
+
+.sa-value-row input {
+  width: 70px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.unit-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   main {
@@ -355,9 +407,5 @@ main {
   .input-panel {
     width: 100%;
     max-height: 50vh;
-  }
-
-  .scroll-container {
-    max-height: 30vh;
   }
 }

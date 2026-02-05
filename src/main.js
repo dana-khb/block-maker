@@ -1,4 +1,108 @@
 import './style.css'
+import { jsPDF } from 'jspdf'
+import 'svg2pdf.js'
+
+// ---- Seam Allowance Utility Functions ----
+
+function sampleCubicBezier(p0, cp1, cp2, p3, n = 40) {
+  const points = []
+  for (let i = 0; i <= n; i++) {
+    const t = i / n
+    const mt = 1 - t
+    const mt2 = mt * mt
+    const mt3 = mt2 * mt
+    const t2 = t * t
+    const t3 = t2 * t
+    points.push({
+      x: mt3 * p0.x + 3 * mt2 * t * cp1.x + 3 * mt * t2 * cp2.x + t3 * p3.x,
+      y: mt3 * p0.y + 3 * mt2 * t * cp1.y + 3 * mt * t2 * cp2.y + t3 * p3.y
+    })
+  }
+  return points
+}
+
+function segmentsToPolyline(segments, samplesPerCurve = 40) {
+  const points = []
+  for (const seg of segments) {
+    if (seg.type === 'line') {
+      if (points.length === 0) points.push(seg.p1)
+      points.push(seg.p2)
+    } else if (seg.type === 'cubic') {
+      const sampled = sampleCubicBezier(seg.p0, seg.cp1, seg.cp2, seg.p3, samplesPerCurve)
+      const start = points.length > 0 ? 1 : 0
+      for (let i = start; i < sampled.length; i++) points.push(sampled[i])
+    }
+  }
+  return points
+}
+
+function lineLineIntersect(a1, a2, b1, b2) {
+  const dx1 = a2.x - a1.x, dy1 = a2.y - a1.y
+  const dx2 = b2.x - b1.x, dy2 = b2.y - b1.y
+  const denom = dx1 * dy2 - dy1 * dx2
+  if (Math.abs(denom) < 1e-10) return null
+  const t = ((b1.x - a1.x) * dy2 - (b1.y - a1.y) * dx2) / denom
+  return { x: a1.x + t * dx1, y: a1.y + t * dy1 }
+}
+
+function signedArea(points) {
+  let area = 0
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length
+    area += points[i].x * points[j].y - points[j].x * points[i].y
+  }
+  return area / 2
+}
+
+function offsetPolygon(points, offset) {
+  const N = points.length
+  if (N < 3) return points
+
+  const area = signedArea(points)
+  const dir = area < 0 ? 1 : -1
+  const off = offset * dir
+
+  const offsetEdges = []
+  for (let i = 0; i < N; i++) {
+    const p1 = points[i]
+    const p2 = points[(i + 1) % N]
+    const dx = p2.x - p1.x
+    const dy = p2.y - p1.y
+    const len = Math.sqrt(dx * dx + dy * dy)
+    if (len < 1e-10) { offsetEdges.push(null); continue }
+    const nx = -dy / len * off
+    const ny = dx / len * off
+    offsetEdges.push({
+      p1: { x: p1.x + nx, y: p1.y + ny },
+      p2: { x: p2.x + nx, y: p2.y + ny }
+    })
+  }
+
+  const result = []
+  for (let i = 0; i < N; i++) {
+    const edgeA = offsetEdges[i]
+    const edgeB = offsetEdges[(i + 1) % N]
+    if (!edgeA || !edgeB) {
+      if (edgeA) result.push(edgeA.p2)
+      else if (edgeB) result.push(edgeB.p1)
+      continue
+    }
+    const ix = lineLineIntersect(edgeA.p1, edgeA.p2, edgeB.p1, edgeB.p2)
+    if (ix) {
+      const mid = { x: (edgeA.p2.x + edgeB.p1.x) / 2, y: (edgeA.p2.y + edgeB.p1.y) / 2 }
+      const dx = ix.x - mid.x, dy = ix.y - mid.y
+      if (Math.sqrt(dx * dx + dy * dy) > Math.abs(offset) * 3) {
+        result.push(edgeA.p2)
+        result.push(edgeB.p1)
+      } else {
+        result.push(ix)
+      }
+    } else {
+      result.push({ x: (edgeA.p2.x + edgeB.p1.x) / 2, y: (edgeA.p2.y + edgeB.p1.y) / 2 })
+    }
+  }
+  return result
+}
 
 // Variable registry - stores all available variables for expressions
 const variables = {}
@@ -312,7 +416,7 @@ function calculatePattern(inputs) {
   const knee_seam_x = hem_left_x + (Y_knee - Y_length) / inseam_slope
   const knee_line = front_crease_x - knee_seam_x - ease.front_knee_ease
 
-  // Step 3: Calculate SVG Bounds
+  // Step 3: Calculate SVG Bounds (base values; final viewBox computed in generateSVG)
   const min_x = FrontCrotchPoint
   const max_x = BackCrotchPoint
   const min_y = back_waist_rise
@@ -346,6 +450,101 @@ function calculatePattern(inputs) {
     // Pass through ease and curves
     ease, curves
   }
+}
+
+// Build the closed outline of the front piece as an ordered array of segments
+function buildFrontPieceSegments(calc, v) {
+  return [
+    // Center line up to waist anchor
+    { type: 'line', p1: {x: 0, y: calc.Y_hip}, p2: {x: calc.front_waist_anchor_x, y: calc.front_waist_anchor_y} },
+    // Front waistline curve seg1
+    { type: 'cubic', p0: {x: calc.front_waist_anchor_x, y: calc.front_waist_anchor_y},
+      cp1: {x: calc.front_waist_anchor_x, y: calc.front_waist_anchor_y},
+      cp2: {x: v.front_CP2_x, y: v.front_CP2_y},
+      p3: {x: v.front_P3_x, y: v.front_P3_y} },
+    // Front waistline curve seg2
+    { type: 'cubic', p0: {x: v.front_P3_x, y: v.front_P3_y},
+      cp1: {x: v.front_CP3_x, y: v.front_CP3_y},
+      cp2: {x: calc.front_waist_end_x, y: 0},
+      p3: {x: calc.front_waist_end_x, y: 0} },
+    // Front sideseam curve (reversed: waist → peak)
+    { type: 'cubic', p0: {x: calc.front_waist_end_x, y: 0},
+      cp1: {x: v.fs_seg2_CP2_x, y: v.fs_seg2_CP2_y},
+      cp2: {x: v.fs_seg2_CP1_x, y: v.fs_seg2_CP1_y},
+      p3: {x: v.peak_x, y: v.peak_y} },
+    // Front sideseam curve (reversed: peak → knee)
+    { type: 'cubic', p0: {x: v.peak_x, y: v.peak_y},
+      cp1: {x: v.fs_seg1_CP2_x, y: v.fs_seg1_CP2_y},
+      cp2: {x: v.fs_seg1_CP1_x, y: v.fs_seg1_CP1_y},
+      p3: {x: v.sideseam_knee_x, y: v.sideseam_knee_y} },
+    // Front sideseam straight (knee → hem)
+    { type: 'line', p1: {x: v.sideseam_knee_x, y: v.sideseam_knee_y}, p2: {x: calc.front_crease_x + calc.FrontHem/2, y: calc.Y_length} },
+    // Front hemline (right → left)
+    { type: 'line', p1: {x: calc.front_crease_x + calc.FrontHem/2, y: calc.Y_length}, p2: {x: calc.hem_left_x, y: calc.Y_length} },
+    // Front inseam straight (hem → knee)
+    { type: 'line', p1: {x: calc.hem_left_x, y: calc.Y_length}, p2: {x: v.front_inseam_P0_x, y: v.front_inseam_P0_y} },
+    // Front inseam curve (knee → crotch)
+    { type: 'cubic', p0: {x: v.front_inseam_P0_x, y: v.front_inseam_P0_y},
+      cp1: {x: v.front_inseam_CP1_x, y: v.front_inseam_CP1_y},
+      cp2: {x: v.front_inseam_CP2_x, y: v.front_inseam_CP2_y},
+      p3: {x: calc.FrontCrotchPoint, y: calc.Y_crotch} },
+    // Front crotch curve (crotch → hip)
+    { type: 'cubic', p0: {x: calc.FrontCrotchPoint, y: calc.Y_crotch},
+      cp1: {x: v.front_CP1_x, y: v.front_CP1_y},
+      cp2: {x: v.front_CP2_curve_x, y: v.front_CP2_curve_y},
+      p3: {x: 0, y: calc.Y_hip} },
+  ]
+}
+
+// Build the closed outline of the back piece as an ordered array of segments
+function buildBackPieceSegments(calc, v) {
+  return [
+    // Center diagonal 1 (hip → top)
+    { type: 'line', p1: {x: calc.frameWidth, y: calc.Y_hip}, p2: {x: calc.frameWidth - calc.ease.back_waist_offset, y: 0} },
+    // Center diagonal 2 (top → waist rise)
+    { type: 'line', p1: {x: calc.frameWidth - calc.ease.back_waist_offset, y: 0}, p2: {x: v.back_diag_end_x, y: calc.back_waist_rise} },
+    // Back waistline curve seg1
+    { type: 'cubic', p0: {x: v.back_diag_end_x, y: calc.back_waist_rise},
+      cp1: {x: v.back_diag_end_x, y: calc.back_waist_rise},
+      cp2: {x: v.back_CP2_x, y: v.back_CP2_y},
+      p3: {x: v.back_P3_x, y: v.back_P3_y} },
+    // Back waistline curve seg2
+    { type: 'cubic', p0: {x: v.back_P3_x, y: v.back_P3_y},
+      cp1: {x: v.back_CP3_x, y: v.back_CP3_y},
+      cp2: {x: calc.back_waist_end_x, y: 0},
+      p3: {x: calc.back_waist_end_x, y: 0} },
+    // Back inseam curve (reversed seg2: waist → hip_peak)
+    { type: 'cubic', p0: {x: calc.back_waist_end_x, y: 0},
+      cp1: {x: v.bi_seg2_CP2_x, y: v.bi_seg2_CP2_y},
+      cp2: {x: v.bi_seg2_CP1_x, y: v.bi_seg2_CP1_y},
+      p3: {x: v.hip_peak_x, y: v.hip_peak_y} },
+    // Back inseam curve (reversed seg1: hip_peak → knee)
+    { type: 'cubic', p0: {x: v.hip_peak_x, y: v.hip_peak_y},
+      cp1: {x: v.bi_seg1_CP2_x, y: v.bi_seg1_CP2_y},
+      cp2: {x: v.bi_seg1_CP1_x, y: v.bi_seg1_CP1_y},
+      p3: {x: v.back_inseam_knee_x, y: calc.Y_knee} },
+    // Back inseam straight (knee → hem)
+    { type: 'line', p1: {x: v.back_inseam_knee_x, y: calc.Y_knee}, p2: {x: v.back_hem_left_x, y: calc.Y_length} },
+    // Back hemline (left → right)
+    { type: 'line', p1: {x: v.back_hem_left_x, y: calc.Y_length}, p2: {x: v.back_hem_right_x, y: calc.Y_length} },
+    // Back sideseam straight (hem → knee)
+    { type: 'line', p1: {x: v.back_hem_right_x, y: calc.Y_length}, p2: {x: v.back_sideseam_knee_x, y: calc.Y_knee} },
+    // Back sideseam curve seg1 (knee → mid_thigh)
+    { type: 'cubic', p0: {x: v.back_sideseam_knee_x, y: calc.Y_knee},
+      cp1: {x: v.back_sideseam_knee_x, y: calc.Y_knee},
+      cp2: {x: v.bs_seg1_CP2_x, y: v.bs_seg1_CP2_y},
+      p3: {x: v.mid_thigh_x, y: v.mid_thigh_y} },
+    // Back sideseam curve seg2 (mid_thigh → crotch)
+    { type: 'cubic', p0: {x: v.mid_thigh_x, y: v.mid_thigh_y},
+      cp1: {x: v.bs_seg2_CP1_x, y: v.bs_seg2_CP1_y},
+      cp2: {x: calc.BackCrotchPoint, y: calc.Y_crotch},
+      p3: {x: calc.BackCrotchPoint, y: calc.Y_crotch} },
+    // Back crotch curve (crotch → hip)
+    { type: 'cubic', p0: {x: calc.BackCrotchPoint, y: calc.Y_crotch},
+      cp1: {x: v.back_CP1_x, y: v.back_CP1_y},
+      cp2: {x: v.back_CP2_curve_x, y: v.back_CP2_curve_y},
+      p3: {x: calc.frameWidth, y: calc.Y_hip} },
+  ]
 }
 
 function generateSVG(calc) {
@@ -442,47 +641,114 @@ function generateSVG(calc) {
   const bs_seg2_CP1_x = mid_thigh_x + curves.back_side_seg2_CP1_ratio_x * (calc.BackCrotchPoint - mid_thigh_x)
   const bs_seg2_CP1_y = mid_thigh_y - curves.back_side_seg2_CP1_ratio_y * (mid_thigh_y - calc.Y_crotch)
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg"
-     width="${calc.viewBox_width}" height="${calc.viewBox_height}"
-     viewBox="${calc.viewBox_x} ${calc.viewBox_y} ${calc.viewBox_width} ${calc.viewBox_height}">
+  // Collect all derived vars for segment builders
+  const v = {
+    front_CP2_x, front_CP2_y, front_P3_x, front_P3_y, front_CP3_x, front_CP3_y,
+    back_CP2_x, back_CP2_y, back_P3_x, back_P3_y, back_CP3_x, back_CP3_y,
+    front_CP1_x, front_CP1_y, front_CP2_curve_x, front_CP2_curve_y,
+    back_CP1_x, back_CP1_y, back_CP2_curve_x, back_CP2_curve_y,
+    back_diag_end_x,
+    front_inseam_P0_x, front_inseam_P0_y, front_inseam_CP1_x, front_inseam_CP1_y, front_inseam_CP2_x, front_inseam_CP2_y,
+    sideseam_knee_x, sideseam_knee_y, peak_x, peak_y,
+    fs_seg1_CP1_x, fs_seg1_CP1_y, fs_seg1_CP2_x, fs_seg1_CP2_y,
+    fs_seg2_CP1_x, fs_seg2_CP1_y, fs_seg2_CP2_x, fs_seg2_CP2_y,
+    back_hem_left_x, back_hem_right_x, back_inseam_knee_x, back_sideseam_knee_x,
+    hip_peak_x, hip_peak_y,
+    bi_seg1_CP1_x, bi_seg1_CP1_y, bi_seg1_CP2_x, bi_seg1_CP2_y,
+    bi_seg2_CP1_x, bi_seg2_CP1_y, bi_seg2_CP2_x, bi_seg2_CP2_y,
+    mid_thigh_x, mid_thigh_y,
+    bs_seg1_CP2_x, bs_seg1_CP2_y, bs_seg2_CP1_x, bs_seg2_CP1_y
+  }
 
-  <!-- Frame Definition -->
-  <g id="frame">
-    <line x1="${calc.X0}" y1="${calc.Y0}" x2="${calc.X0}" y2="${calc.frameHeight}" ${dottedStyle}/>
-    <line x1="${calc.X0}" y1="${calc.Y0}" x2="${calc.frameWidth}" y2="${calc.Y0}" ${dottedStyle}/>
-  </g>
+  // Compute piece outlines (needed for both seam allowance and piece separation)
+  const frontSegs = buildFrontPieceSegments(calc, v)
+  const backSegs = buildBackPieceSegments(calc, v)
+  const frontPoly = segmentsToPolyline(frontSegs)
+  const backPoly = segmentsToPolyline(backSegs)
+
+  // Seam allowance
+  const saToggle = document.getElementById('seam-allowance-toggle')
+  const saInput = document.getElementById('seam-allowance-value')
+  const saEnabled = saToggle && saToggle.checked
+  const saCm = (saEnabled && saInput) ? (parseFloat(saInput.value) || 0) : 0
+  const saPx = saCm * 10
+  const toPoints = (pts) => pts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
+
+  let frontOffsetPoly = null
+  let backOffsetPoly = null
+  let seamAllowanceFrontSvg = ''
+  let seamAllowanceBackSvg = ''
+
+  if (saPx > 0) {
+    frontOffsetPoly = offsetPolygon(frontPoly, saPx)
+    backOffsetPoly = offsetPolygon(backPoly, saPx)
+    seamAllowanceFrontSvg = `
+    <g id="front_seam_allowance" class="seam-allowance">
+      <polygon points="${toPoints(frontOffsetPoly)}" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4,2"/>
+    </g>`
+    seamAllowanceBackSvg = `
+    <g id="back_seam_allowance" class="seam-allowance">
+      <polygon points="${toPoints(backOffsetPoly)}" fill="none" stroke="#e74c3c" stroke-width="1" stroke-dasharray="4,2"/>
+    </g>`
+  }
+
+  // Calculate piece separation: 2cm gap between outermost edges (including SA if enabled)
+  let frontMaxX, backMinX
+  if (frontOffsetPoly) {
+    frontMaxX = Math.max(...frontOffsetPoly.map(p => p.x))
+    backMinX = Math.min(...backOffsetPoly.map(p => p.x))
+  } else {
+    frontMaxX = Math.max(...frontPoly.map(p => p.x))
+    backMinX = Math.min(...backPoly.map(p => p.x))
+  }
+  const gapPx = 20 // 2cm
+  const backShift = Math.max(0, frontMaxX - backMinX + gapPx)
+
+  // Recompute viewBox to account for piece separation
+  const padVal = 10 + (saPx > 0 ? saPx : 0)
+  const vbX = calc.FrontCrotchPoint - padVal
+  const vbY = calc.back_waist_rise - padVal
+  const vbWidth = (calc.BackCrotchPoint + backShift - calc.FrontCrotchPoint) + 2 * padVal
+  const vbHeight = (calc.Y_length - calc.back_waist_rise) + 2 * padVal
+
+  // Construction line horizontal extent
+  const clX1 = calc.FrontCrotchPoint
+  const clX2 = calc.BackCrotchPoint + backShift
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"
+     width="${vbWidth}" height="${vbHeight}"
+     viewBox="${vbX} ${vbY} ${vbWidth} ${vbHeight}">
+
+  ${seamAllowanceFrontSvg}
 
   <!-- Horizontal Construction Lines -->
   <g id="Hip">
-    <line x1="0" y1="${calc.Y_hip}" x2="${calc.frameWidth}" y2="${calc.Y_hip}" ${dottedStyle}/>
+    <line x1="${clX1}" y1="${calc.Y_hip}" x2="${clX2}" y2="${calc.Y_hip}" ${dottedStyle}/>
   </g>
-
   <g id="Crotch">
-    <line x1="0" y1="${calc.Y_crotch}" x2="${calc.frameWidth}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+    <line x1="${clX1}" y1="${calc.Y_crotch}" x2="${clX2}" y2="${calc.Y_crotch}" ${dottedStyle}/>
   </g>
-
   <g id="Knee">
-    <line x1="0" y1="${calc.Y_knee}" x2="${calc.frameWidth}" y2="${calc.Y_knee}" ${dottedStyle}/>
+    <line x1="${clX1}" y1="${calc.Y_knee}" x2="${clX2}" y2="${calc.Y_knee}" ${dottedStyle}/>
   </g>
-
   <g id="midrise">
-    <line x1="0" y1="${calc.Y_midrise}" x2="${calc.frameWidth}" y2="${calc.Y_midrise}" ${dottedStyle}/>
+    <line x1="${clX1}" y1="${calc.Y_midrise}" x2="${clX2}" y2="${calc.Y_midrise}" ${dottedStyle}/>
   </g>
 
-  <g id="vertical_edge">
-    <line x1="${calc.frameWidth}" y1="0" x2="${calc.frameWidth}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+  <!-- Front Piece Frame -->
+  <g id="frame">
+    <line x1="${calc.X0}" y1="${calc.Y0}" x2="${calc.X0}" y2="${calc.frameHeight}" ${dottedStyle}/>
+    <line x1="${calc.X0}" y1="${calc.Y0}" x2="${calc.X_center}" y2="${calc.Y0}" ${dottedStyle}/>
   </g>
-
-  <!-- Center Division -->
   <g id="center_line">
     <line x1="${calc.X_center}" y1="${calc.Y_length}" x2="${calc.X_center}" y2="${calc.Y_waist}" ${dottedStyle}/>
     <text x="${calc.X_center / 2}" y="${calc.Y_hip - 5}" font-size="11" opacity="0.5" text-anchor="middle">FRONT</text>
-    <text x="${calc.X_center + (calc.frameWidth - calc.X_center) / 2}" y="${calc.Y_hip - 5}" font-size="11" opacity="0.5" text-anchor="middle">BACK</text>
   </g>
-
-  <!-- Crotch Extensions -->
   <g id="crotch_extension">
-    <line x1="${calc.FrontCrotchPoint}" y1="${calc.Y_crotch}" x2="${calc.BackCrotchPoint}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+    <line x1="${calc.FrontCrotchPoint}" y1="${calc.Y_crotch}" x2="${calc.X_center}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+  </g>
+  <g id="creaselines">
+    <line x1="${calc.front_crease_x}" y1="${calc.front_crease_y}" x2="${calc.front_crease_x}" y2="${calc.Y_length}" ${dottedStyle}/>
   </g>
 
   <!-- Front Center (Diagonal + Curve) -->
@@ -491,37 +757,16 @@ function generateSVG(calc) {
     <path d="M ${calc.FrontCrotchPoint},${calc.Y_crotch} C ${front_CP1_x},${front_CP1_y} ${front_CP2_curve_x},${front_CP2_curve_y} 0,${calc.Y_hip}" ${interactiveCurve('crotch')}/>
   </g>
 
-  <!-- Back Center (Diagonal + Curve) -->
-  <g id="back_center_curve">
-    <line x1="${calc.frameWidth}" y1="${calc.Y_hip}" x2="${calc.frameWidth - ease.back_waist_offset}" y2="0" ${solidStyle}/>
-    <line x1="${calc.frameWidth - ease.back_waist_offset}" y1="0" x2="${back_diag_end_x}" y2="${calc.back_waist_rise}" ${solidStyle}/>
-    <path d="M ${calc.BackCrotchPoint},${calc.Y_crotch} C ${back_CP1_x},${back_CP1_y} ${back_CP2_curve_x},${back_CP2_curve_y} ${calc.frameWidth},${calc.Y_hip}" ${interactiveCurve('crotch')}/>
-  </g>
-
   <!-- Front Waistline -->
   <g id="front_waistline">
     <path d="M ${calc.front_waist_anchor_x},${calc.front_waist_anchor_y} C ${calc.front_waist_anchor_x},${calc.front_waist_anchor_y} ${front_CP2_x},${front_CP2_y} ${front_P3_x},${front_P3_y} C ${front_CP3_x},${front_CP3_y} ${calc.front_waist_end_x},0 ${calc.front_waist_end_x},0" ${interactiveCurve('front_waist')}/>
     <line x1="${calc.front_waist_end_x}" y1="0" x2="${calc.X_center}" y2="${calc.Y_hip}" ${dottedStyle}/>
   </g>
 
-  <!-- Back Waistline -->
-  <g id="back_waistline">
-    <path d="M ${calc.back_waist_start_x},${calc.back_waist_rise} C ${calc.back_waist_start_x},${calc.back_waist_rise} ${back_CP2_x},${back_CP2_y} ${back_P3_x},${back_P3_y} C ${back_CP3_x},${back_CP3_y} ${calc.back_waist_end_x},0 ${calc.back_waist_end_x},0" ${interactiveCurve('back_waist')}/>
-    <line x1="${calc.back_waist_end_x}" y1="0" x2="${calc.X_center}" y2="${calc.Y_hip}" ${dottedStyle}/>
-  </g>
-
-  <!-- Creaselines -->
-  <g id="creaselines">
-    <line x1="${calc.front_crease_x}" y1="${calc.front_crease_y}" x2="${calc.front_crease_x}" y2="${calc.Y_length}" ${dottedStyle}/>
-    <line x1="${calc.back_crease_x}" y1="${calc.back_crease_y}" x2="${calc.back_crease_x}" y2="${calc.Y_length}" ${dottedStyle}/>
-  </g>
-
-  <!-- Hemline -->
+  <!-- Front Hemline -->
   <g id="hemline">
     <line x1="${calc.front_crease_x}" y1="${calc.Y_length}" x2="${calc.front_crease_x - calc.FrontHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
     <line x1="${calc.front_crease_x}" y1="${calc.Y_length}" x2="${calc.front_crease_x + calc.FrontHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
-    <line x1="${calc.back_crease_x}" y1="${calc.Y_length}" x2="${calc.back_crease_x + calc.BackHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
-    <line x1="${calc.back_crease_x}" y1="${calc.Y_length}" x2="${calc.back_crease_x - calc.BackHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
   </g>
 
   <!-- Front Inseam -->
@@ -538,24 +783,66 @@ function generateSVG(calc) {
     <path d="M ${sideseam_knee_x},${sideseam_knee_y} C ${fs_seg1_CP1_x},${fs_seg1_CP1_y} ${fs_seg1_CP2_x},${fs_seg1_CP2_y} ${peak_x},${peak_y} C ${fs_seg2_CP1_x},${fs_seg2_CP1_y} ${fs_seg2_CP2_x},${fs_seg2_CP2_y} ${calc.front_waist_end_x},0" ${interactiveCurve('front_side')}/>
   </g>
 
-  <!-- Back Seam Markers -->
-  <g id="back_seam_markers">
-    <line x1="${back_hem_left_x}" y1="${calc.Y_length}" x2="${back_inseam_knee_x}" y2="${calc.Y_knee}" ${dottedStyle}/>
-    <line x1="${back_hem_right_x}" y1="${calc.Y_length}" x2="${back_sideseam_knee_x}" y2="${calc.Y_knee}" ${dottedStyle}/>
-    <circle cx="${back_inseam_knee_x}" cy="${calc.Y_knee}" r="2" fill="magenta"/>
-    <circle cx="${back_sideseam_knee_x}" cy="${calc.Y_knee}" r="2" fill="magenta"/>
-  </g>
+  <!-- Back Piece (shifted) -->
+  <g transform="translate(${backShift}, 0)">
+    ${seamAllowanceBackSvg}
 
-  <!-- Back Inseam -->
-  <g id="back_inseam">
-    <line x1="${back_hem_left_x}" y1="${calc.Y_length}" x2="${back_inseam_knee_x}" y2="${calc.Y_knee}" ${solidStyle}/>
-    <path d="M ${back_inseam_knee_x},${calc.Y_knee} C ${bi_seg1_CP1_x},${bi_seg1_CP1_y} ${bi_seg1_CP2_x},${bi_seg1_CP2_y} ${hip_peak_x},${hip_peak_y} C ${bi_seg2_CP1_x},${bi_seg2_CP1_y} ${bi_seg2_CP2_x},${bi_seg2_CP2_y} ${calc.back_waist_end_x},0" ${interactiveCurve('back_inseam')}/>
-  </g>
+    <!-- Back Piece Frame -->
+    <g id="vertical_edge">
+      <line x1="${calc.frameWidth}" y1="0" x2="${calc.frameWidth}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+    </g>
+    <g>
+      <line x1="${calc.X_center}" y1="0" x2="${calc.frameWidth}" y2="0" ${dottedStyle}/>
+    </g>
+    <g>
+      <line x1="${calc.X_center}" y1="${calc.Y_length}" x2="${calc.X_center}" y2="${calc.Y_waist}" ${dottedStyle}/>
+      <text x="${calc.X_center + (calc.frameWidth - calc.X_center) / 2}" y="${calc.Y_hip - 5}" font-size="11" opacity="0.5" text-anchor="middle">BACK</text>
+    </g>
+    <g>
+      <line x1="${calc.X_center}" y1="${calc.Y_crotch}" x2="${calc.BackCrotchPoint}" y2="${calc.Y_crotch}" ${dottedStyle}/>
+    </g>
+    <g>
+      <line x1="${calc.back_crease_x}" y1="${calc.back_crease_y}" x2="${calc.back_crease_x}" y2="${calc.Y_length}" ${dottedStyle}/>
+    </g>
 
-  <!-- Back Sideseam -->
-  <g id="back_sideseam">
-    <line x1="${back_hem_right_x}" y1="${calc.Y_length}" x2="${back_sideseam_knee_x}" y2="${calc.Y_knee}" ${solidStyle}/>
-    <path d="M ${back_sideseam_knee_x},${calc.Y_knee} C ${back_sideseam_knee_x},${calc.Y_knee} ${bs_seg1_CP2_x},${bs_seg1_CP2_y} ${mid_thigh_x},${mid_thigh_y} C ${bs_seg2_CP1_x},${bs_seg2_CP1_y} ${calc.BackCrotchPoint},${calc.Y_crotch} ${calc.BackCrotchPoint},${calc.Y_crotch}" ${interactiveCurve('back_side')}/>
+    <!-- Back Center (Diagonal + Curve) -->
+    <g id="back_center_curve">
+      <line x1="${calc.frameWidth}" y1="${calc.Y_hip}" x2="${calc.frameWidth - ease.back_waist_offset}" y2="0" ${solidStyle}/>
+      <line x1="${calc.frameWidth - ease.back_waist_offset}" y1="0" x2="${back_diag_end_x}" y2="${calc.back_waist_rise}" ${solidStyle}/>
+      <path d="M ${calc.BackCrotchPoint},${calc.Y_crotch} C ${back_CP1_x},${back_CP1_y} ${back_CP2_curve_x},${back_CP2_curve_y} ${calc.frameWidth},${calc.Y_hip}" ${interactiveCurve('crotch')}/>
+    </g>
+
+    <!-- Back Waistline -->
+    <g id="back_waistline">
+      <path d="M ${calc.back_waist_start_x},${calc.back_waist_rise} C ${calc.back_waist_start_x},${calc.back_waist_rise} ${back_CP2_x},${back_CP2_y} ${back_P3_x},${back_P3_y} C ${back_CP3_x},${back_CP3_y} ${calc.back_waist_end_x},0 ${calc.back_waist_end_x},0" ${interactiveCurve('back_waist')}/>
+      <line x1="${calc.back_waist_end_x}" y1="0" x2="${calc.X_center}" y2="${calc.Y_hip}" ${dottedStyle}/>
+    </g>
+
+    <!-- Back Hemline -->
+    <g id="back_hemline">
+      <line x1="${calc.back_crease_x}" y1="${calc.Y_length}" x2="${calc.back_crease_x + calc.BackHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
+      <line x1="${calc.back_crease_x}" y1="${calc.Y_length}" x2="${calc.back_crease_x - calc.BackHem/2}" y2="${calc.Y_length}" ${solidStyle}/>
+    </g>
+
+    <!-- Back Seam Markers -->
+    <g id="back_seam_markers">
+      <line x1="${back_hem_left_x}" y1="${calc.Y_length}" x2="${back_inseam_knee_x}" y2="${calc.Y_knee}" ${dottedStyle}/>
+      <line x1="${back_hem_right_x}" y1="${calc.Y_length}" x2="${back_sideseam_knee_x}" y2="${calc.Y_knee}" ${dottedStyle}/>
+      <circle cx="${back_inseam_knee_x}" cy="${calc.Y_knee}" r="2" fill="magenta"/>
+      <circle cx="${back_sideseam_knee_x}" cy="${calc.Y_knee}" r="2" fill="magenta"/>
+    </g>
+
+    <!-- Back Inseam -->
+    <g id="back_inseam">
+      <line x1="${back_hem_left_x}" y1="${calc.Y_length}" x2="${back_inseam_knee_x}" y2="${calc.Y_knee}" ${solidStyle}/>
+      <path d="M ${back_inseam_knee_x},${calc.Y_knee} C ${bi_seg1_CP1_x},${bi_seg1_CP1_y} ${bi_seg1_CP2_x},${bi_seg1_CP2_y} ${hip_peak_x},${hip_peak_y} C ${bi_seg2_CP1_x},${bi_seg2_CP1_y} ${bi_seg2_CP2_x},${bi_seg2_CP2_y} ${calc.back_waist_end_x},0" ${interactiveCurve('back_inseam')}/>
+    </g>
+
+    <!-- Back Sideseam -->
+    <g id="back_sideseam">
+      <line x1="${back_hem_right_x}" y1="${calc.Y_length}" x2="${back_sideseam_knee_x}" y2="${calc.Y_knee}" ${solidStyle}/>
+      <path d="M ${back_sideseam_knee_x},${calc.Y_knee} C ${back_sideseam_knee_x},${calc.Y_knee} ${bs_seg1_CP2_x},${bs_seg1_CP2_y} ${mid_thigh_x},${mid_thigh_y} C ${bs_seg2_CP1_x},${bs_seg2_CP1_y} ${calc.BackCrotchPoint},${calc.Y_crotch} ${calc.BackCrotchPoint},${calc.Y_crotch}" ${interactiveCurve('back_side')}/>
+    </g>
   </g>
 
 </svg>`
@@ -576,6 +863,198 @@ function updatePattern() {
   const calc = calculatePattern(inputs)
   const svg = generateSVG(calc)
   document.getElementById('pattern-container').innerHTML = svg
+}
+
+// ---- Export to Print: Tiled A4 PDF ----
+
+async function exportTiledPDF() {
+  // Ensure pattern is current
+  updatePattern()
+
+  // Grab the SVG element
+  const svgEl = document.querySelector('#pattern-container svg')
+  if (!svgEl) {
+    alert('No pattern to export. Generate a pattern first.')
+    return
+  }
+
+  // Read viewBox
+  const vb = svgEl.viewBox.baseVal
+  const vbX = vb.x
+  const vbY = vb.y
+  const vbWidth = vb.width
+  const vbHeight = vb.height
+
+  // Convert to cm (10 SVG px = 1cm)
+  const patternWidthCm = vbWidth / 10
+  const patternHeightCm = vbHeight / 10
+
+  // A4 paper dimensions in cm
+  const paperW = 21
+  const paperH = 29.7
+  const edgeMargin = 1 // cm
+  const usableW = paperW - 2 * edgeMargin // 19cm
+  const usableH = paperH - 2 * edgeMargin // 27.7cm
+
+  // Tile grid
+  const tilesH = Math.ceil(patternWidthCm / usableW)
+  const tilesV = Math.ceil(patternHeightCm / usableH)
+
+  // SVG usable area in px (10px/cm)
+  const usableWpx = usableW * 10 // 190
+  const usableHpx = usableH * 10 // 277
+
+  // Scale: 10 SVG units = 1cm on paper. Paper units in jsPDF are mm by default,
+  // so 1cm = 10mm. Thus scale = 10mm / 10px = 1 mm/px.
+  const scale = 1 // 1mm per SVG px
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+  const totalPages = tilesH * tilesV
+
+  for (let row = 0; row < tilesV; row++) {
+    for (let col = 0; col < tilesH; col++) {
+      const pageNum = row * tilesH + col + 1
+
+      // Add new page (first page is created automatically)
+      if (pageNum > 1) doc.addPage()
+
+      // SVG region for this tile
+      const tileVbX = vbX + col * usableWpx
+      const tileVbY = vbY + row * usableHpx
+      // Clamp tile viewport to actual pattern extent
+      const tileVbW = Math.min(usableWpx, vbX + vbWidth - tileVbX)
+      const tileVbH = Math.min(usableHpx, vbY + vbHeight - tileVbY)
+
+      // Clone SVG and set viewBox to this tile's region
+      const clonedSvg = svgEl.cloneNode(true)
+      clonedSvg.setAttribute('viewBox', `${tileVbX} ${tileVbY} ${tileVbW} ${tileVbH}`)
+      clonedSvg.setAttribute('width', `${tileVbW * scale}mm`)
+      clonedSvg.setAttribute('height', `${tileVbH * scale}mm`)
+
+      // Render SVG into the PDF at the margin offset
+      // edgeMargin in mm = 10
+      const marginMm = edgeMargin * 10
+      const usableWmm = usableW * 10
+      const usableHmm = usableH * 10
+
+      // Set clipping rectangle to usable area
+      doc.saveGraphicsState()
+      doc.rect(marginMm, marginMm, usableWmm, usableHmm)
+      // Note: jsPDF clip via rect + clip path
+      // We use the internal API for clipping
+      doc.internal.write('W n')
+
+      // Temporarily add cloned SVG to DOM for svg2pdf rendering
+      clonedSvg.style.position = 'absolute'
+      clonedSvg.style.left = '-9999px'
+      document.body.appendChild(clonedSvg)
+
+      try {
+        await doc.svg(clonedSvg, {
+          x: marginMm,
+          y: marginMm,
+          width: tileVbW * scale,
+          height: tileVbH * scale
+        })
+      } finally {
+        document.body.removeChild(clonedSvg)
+      }
+
+      doc.restoreGraphicsState()
+
+      // ---- Draw alignment marks ----
+      drawAlignmentMarks(doc, col, row, tilesH, tilesV, paperW, paperH)
+
+      // ---- Draw page info ----
+      drawPageInfo(doc, pageNum, totalPages, col, row, paperW, paperH)
+
+      // ---- Scale verification square (page 1 only) ----
+      if (pageNum === 1) {
+        drawScaleSquare(doc, edgeMargin)
+      }
+    }
+  }
+
+  doc.save('pattern_tiled_a4.pdf')
+}
+
+function drawAlignmentMarks(doc, col, row, tilesH, tilesV, paperW, paperH) {
+  const pw = paperW * 10 // mm
+  const ph = paperH * 10 // mm
+  const markOffset = 20 // 2cm = 20mm from edge
+
+  doc.setDrawColor(153, 153, 153) // #999
+  doc.setLineDashPattern([2, 2], 0)
+  doc.setLineWidth(0.3)
+  doc.setFontSize(6)
+  doc.setTextColor(153, 153, 153)
+
+  // Left internal edge (col > 0)
+  if (col > 0) {
+    doc.line(markOffset, 0, markOffset, ph)
+    doc.text('Align edge \u2192', markOffset + 1, ph / 2, { angle: 90 })
+  }
+
+  // Right internal edge (col < tilesH - 1)
+  if (col < tilesH - 1) {
+    doc.line(pw - markOffset, 0, pw - markOffset, ph)
+    doc.text('\u2190 Align edge', pw - markOffset - 1, ph / 2, { angle: 90 })
+  }
+
+  // Top internal edge (row > 0)
+  if (row > 0) {
+    doc.line(0, markOffset, pw, markOffset)
+    doc.text('Align edge \u2193', pw / 2, markOffset + 3)
+  }
+
+  // Bottom internal edge (row < tilesV - 1)
+  if (row < tilesV - 1) {
+    doc.line(0, ph - markOffset, pw, ph - markOffset)
+    doc.text('Align edge \u2191', pw / 2, ph - markOffset - 1)
+  }
+
+  // Reset dash pattern
+  doc.setLineDashPattern([], 0)
+}
+
+function drawPageInfo(doc, pageNum, totalPages, col, row, paperW, paperH) {
+  const pw = paperW * 10
+  const ph = paperH * 10
+
+  doc.setFontSize(8)
+  doc.setTextColor(100, 100, 100)
+  doc.text(`Page ${pageNum} of ${totalPages}  (Row ${row + 1}, Col ${col + 1})`, pw / 2, ph - 3, { align: 'center' })
+}
+
+function drawScaleSquare(doc, edgeMarginCm) {
+  const marginMm = edgeMarginCm * 10
+  const startX = marginMm + 5 // 5mm inside usable area
+  const startY = marginMm + 5
+  const barLen = 30 // 3cm = 30mm
+  const capLen = 3  // end cap length in mm
+
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineDashPattern([], 0)
+  doc.setLineWidth(0.5)
+
+  // Horizontal bar
+  doc.line(startX, startY, startX + barLen, startY)
+  // End caps (vertical)
+  doc.line(startX, startY - capLen / 2, startX, startY + capLen / 2)
+  doc.line(startX + barLen, startY - capLen / 2, startX + barLen, startY + capLen / 2)
+
+  // Vertical bar
+  doc.line(startX, startY, startX, startY + barLen)
+  // End caps (horizontal)
+  doc.line(startX - capLen / 2, startY, startX + capLen / 2, startY)
+  doc.line(startX - capLen / 2, startY + barLen, startX + capLen / 2, startY + barLen)
+
+  // Labels
+  doc.setFontSize(7)
+  doc.setTextColor(0, 0, 0)
+  doc.text('3cm', startX + barLen / 2, startY - 2, { align: 'center' })
+  doc.text('3cm', startX - 3, startY + barLen / 2, { angle: 90 })
 }
 
 // Tab switching
@@ -776,6 +1255,10 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('input', updatePattern)
   })
 
-  // Generate button
-  document.getElementById('generate-btn').addEventListener('click', updatePattern)
+  // Seam allowance toggle
+  const saToggle = document.getElementById('seam-allowance-toggle')
+  if (saToggle) saToggle.addEventListener('change', updatePattern)
+
+  // Export to Print button
+  document.getElementById('export-btn').addEventListener('click', exportTiledPDF)
 })
