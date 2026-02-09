@@ -56,17 +56,17 @@ Define these styles in the SVG `<defs>` section or as CSS classes. All pattern e
 
 ## Input Measurements (all in cm)
 
-Hip: 96
+Hip: 100
 
-Waist to Hip: 24
+Waist to Hip: 20
 
-Waist to Knee: 63
+Waist to Knee: 58
 
-Waist to Ankle: 96
+Waist to Ankle: 100
 
-Crotch Depth: 29
+Crotch Depth: 26
 
-Waist: 78
+Waist: 76
 
 Hemline Circumference: 46
 
