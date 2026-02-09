@@ -3,13 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Block Maker - Trouser Pattern Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Block Maker</title>
   </head>
   <body>
     <div id="app">
       <header>
         <h1>Block Maker</h1>
-        <p>Trouser Pattern Generator</p>
+        <p>Pants Block Generator</p>
       </header>
 
       <main>
@@ -385,6 +388,28 @@
         </section>
       </main>
     </div>
+    <!-- Export Modal -->
+    <div id="export-modal" class="modal-overlay" hidden>
+      <div class="modal-box">
+        <button type="button" class="modal-close" id="modal-close">&times;</button>
+        <h3>Export Pattern</h3>
+        <p>Download your tiled A4 PDF, ready to print and assemble.</p>
+        <button type="button" id="download-btn">Download PDF</button>
+        <div id="download-status" class="email-status" hidden></div>
+        <div class="subscribe-section">
+          <p class="subscribe-label">Stay tuned for updates</p>
+          <form id="subscribe-form" name="subscribers" data-netlify="true">
+            <input type="hidden" name="form-name" value="subscribers">
+            <div class="subscribe-row">
+              <input type="email" id="email-input" name="email" placeholder="you@example.com" autocomplete="email">
+              <button type="submit" id="subscribe-btn">Subscribe</button>
+            </div>
+          </form>
+          <div id="subscribe-status" class="email-status" hidden></div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

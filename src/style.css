@@ -5,16 +5,16 @@
 }
 
 :root {
-  --bg-color: #f5f5f5;
-  --panel-bg: #ffffff;
+  --bg-color: #EFEFE7;
+  --panel-bg: #EFEFE7;
   --text-color: #333;
   --border-color: #ddd;
-  --accent-color: #2563eb;
-  --accent-hover: #1d4ed8;
+  --accent-color: #636BFF;
+  --accent-hover: #4520CB;
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   line-height: 1.5;
@@ -292,7 +292,7 @@ main {
 .pattern-panel {
   flex: 1;
   min-height: 0;
-  background-color: var(--panel-bg);
+  background-color: white;
   border-radius: 8px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
@@ -314,7 +314,7 @@ main {
   flex: 1;
   min-height: 0;
   position: relative;
-  background-color: #fafafa;
+  background-color: white;
   border-radius: 4px;
   padding: 1rem;
   overflow: hidden;
@@ -330,7 +330,7 @@ main {
   width: auto;
   height: auto;
   background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 /* Interactive curve highlighting */
@@ -396,6 +396,169 @@ main {
 .unit-label {
   font-size: 0.75rem;
   color: #666;
+}
+
+/* Export Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal-box {
+  background-color: var(--panel-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-box h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.modal-box > p {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 1.25rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+#download-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--accent-color);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#download-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+#download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.subscribe-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.subscribe-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.subscribe-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#email-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+#email-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(99, 107, 255, 0.15);
+}
+
+#subscribe-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent-color);
+  background-color: transparent;
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+#subscribe-btn:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+#subscribe-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.email-status {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.email-status[hidden] {
+  display: none;
+}
+
+.email-status.success {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.email-status.error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.email-status.loading {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
 }
 
 /* Responsive */
