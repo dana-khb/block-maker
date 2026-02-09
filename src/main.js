@@ -484,9 +484,9 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadBtn.textContent = 'Downloaded!'
       downloadStatus.hidden = true
 
-      // Track download event in Google Analytics
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'pdf_download', { event_category: 'export' })
+      // Track download event in PostHog
+      if (window.posthog) {
+        window.posthog.capture('pdf_download')
       }
     } catch (err) {
       console.error('PDF generation error:', err)
