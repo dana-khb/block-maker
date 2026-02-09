@@ -61,7 +61,7 @@
 
           <!-- Ease Tab -->
           <div class="tab-content" id="ease-tab">
-            <h2>Ease Variables (px)</h2>
+            <h2>Ease Variables (cm)</h2>
             <div class="variables-panel">
               <h4>Available Variables</h4>
               <div class="variables-list" id="variables-list">
@@ -83,7 +83,7 @@
               <h3>Frame & Fit</h3>
               <div class="input-group">
                 <label for="hip_ease">Hip Ease</label>
-                <input type="text" id="hip_ease" value="20" data-svg-target="frame">
+                <input type="text" id="hip_ease" value="2" data-svg-target="frame">
               </div>
               <div class="input-group">
                 <label for="x_center_offset">X Center Offset</label>
@@ -91,79 +91,79 @@
               </div>
               <div class="input-group">
                 <label for="crotch_ease">Crotch Ease</label>
-                <input type="text" id="crotch_ease" value="15" data-svg-target="Crotch">
+                <input type="text" id="crotch_ease" value="1.5" data-svg-target="Crotch">
               </div>
               <div class="input-group">
                 <label for="front_crotch_extension">Front Crotch Extension</label>
-                <input type="text" id="front_crotch_extension" value="hip_px / 16" data-svg-target="front_center_curve,crotch_extension">
+                <input type="text" id="front_crotch_extension" value="hip / 16" data-svg-target="front_center_curve,crotch_extension">
               </div>
               <div class="input-group">
                 <label for="back_crotch_extension">Back Crotch Extension</label>
-                <input type="text" id="back_crotch_extension" value="hip_px / 8" data-svg-target="back_center_curve,crotch_extension">
+                <input type="text" id="back_crotch_extension" value="hip / 8" data-svg-target="back_center_curve,crotch_extension">
               </div>
 
               <h3>Rise</h3>
               <div class="input-group">
                 <label for="front_rise_x">Front Rise X</label>
-                <input type="text" id="front_rise_x" value="5" data-svg-target="front_center_curve,front_waistline">
+                <input type="text" id="front_rise_x" value="0.5" data-svg-target="front_center_curve,front_waistline">
               </div>
               <div class="input-group">
                 <label for="front_rise_y">Front Rise Y</label>
-                <input type="text" id="front_rise_y" value="10" data-svg-target="front_center_curve,front_waistline">
+                <input type="text" id="front_rise_y" value="1" data-svg-target="front_center_curve,front_waistline">
               </div>
               <div class="input-group">
                 <label for="back_rise">Back Rise</label>
-                <input type="text" id="back_rise" value="25" data-svg-target="back_center_curve,back_waistline">
+                <input type="text" id="back_rise" value="2.5" data-svg-target="back_center_curve,back_waistline">
               </div>
               <div class="input-group">
                 <label for="back_waist_offset">Back Waist Offset</label>
-                <input type="text" id="back_waist_offset" value="40" data-svg-target="back_center_curve,back_waistline">
+                <input type="text" id="back_waist_offset" value="4" data-svg-target="back_center_curve,back_waistline">
               </div>
 
               <h3>Hem</h3>
               <div class="input-group">
                 <label for="front_hem_ease">Front Hem Ease</label>
-                <input type="text" id="front_hem_ease" value="-10" data-svg-target="hemline">
+                <input type="text" id="front_hem_ease" value="-1" data-svg-target="hemline">
               </div>
               <div class="input-group">
                 <label for="back_hem_ease">Back Hem Ease</label>
-                <input type="text" id="back_hem_ease" value="10" data-svg-target="hemline">
+                <input type="text" id="back_hem_ease" value="1" data-svg-target="hemline">
               </div>
 
               <h3>Knee</h3>
               <div class="input-group">
                 <label for="front_knee_ease">Front Knee Ease</label>
-                <input type="text" id="front_knee_ease" value="10" data-svg-target="front_inseam,Knee">
+                <input type="text" id="front_knee_ease" value="1" data-svg-target="front_inseam,Knee">
               </div>
               <div class="input-group">
                 <label for="back_knee_ease">Back Knee Ease</label>
-                <input type="text" id="back_knee_ease" value="10" data-svg-target="back_inseam,back_seam_markers">
+                <input type="text" id="back_knee_ease" value="1" data-svg-target="back_inseam,back_seam_markers">
               </div>
 
               <h3>Sideseam Shaping</h3>
               <div class="input-group">
                 <label for="sideseam_hip_ease">Sideseam Hip Ease</label>
-                <input type="text" id="sideseam_hip_ease" value="1" data-svg-target="front_sideseam">
+                <input type="text" id="sideseam_hip_ease" value="0.1" data-svg-target="front_sideseam">
               </div>
 
               <h3>Back Inseam Shaping</h3>
               <div class="input-group">
                 <label for="back_inseam_hip_offset_x">Hip Offset X</label>
-                <input type="text" id="back_inseam_hip_offset_x" value="1.543" data-svg-target="back_inseam">
+                <input type="text" id="back_inseam_hip_offset_x" value="0.1543" data-svg-target="back_inseam">
               </div>
               <div class="input-group">
                 <label for="back_inseam_hip_offset_y">Hip Offset Y</label>
-                <input type="text" id="back_inseam_hip_offset_y" value="0.141" data-svg-target="back_inseam">
+                <input type="text" id="back_inseam_hip_offset_y" value="0.0141" data-svg-target="back_inseam">
               </div>
 
               <h3>Back Sideseam Shaping</h3>
               <div class="input-group">
                 <label for="back_sideseam_thigh_offset_x">Thigh Offset X</label>
-                <input type="text" id="back_sideseam_thigh_offset_x" value="17.964" data-svg-target="back_sideseam">
+                <input type="text" id="back_sideseam_thigh_offset_x" value="1.7964" data-svg-target="back_sideseam">
               </div>
               <div class="input-group">
                 <label for="back_sideseam_thigh_offset_y">Thigh Offset Y</label>
-                <input type="text" id="back_sideseam_thigh_offset_y" value="178.229" data-svg-target="back_sideseam">
+                <input type="text" id="back_sideseam_thigh_offset_y" value="17.8229" data-svg-target="back_sideseam">
               </div>
             </div>
           </div>

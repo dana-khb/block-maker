@@ -20,14 +20,14 @@ function updateVariables() {
   })
 
   // Calculate derived variables that depend on measurements
-  // These need to evaluate expressions for hip_ease and x_center_offset
+  // Ease inputs are in cm — convert to px (×10) for internal calculations
   const hip_px = variables.hip_px || 0
-  const hip_ease = evaluateExpression(document.getElementById('hip_ease')?.value || '0')
-  const x_center_offset = evaluateExpression(document.getElementById('x_center_offset')?.value || '0')
+  const hip_ease_cm = evaluateExpression(document.getElementById('hip_ease')?.value || '0')
+  const x_center_offset_cm = evaluateExpression(document.getElementById('x_center_offset')?.value || '0')
 
-  const frameWidth = (hip_px / 2) + hip_ease
+  const frameWidth = (hip_px / 2) + hip_ease_cm * 10
   variables.frameWidth = frameWidth
-  variables.X_center = frameWidth / 2 + x_center_offset
+  variables.X_center = frameWidth / 2 + x_center_offset_cm * 10
 }
 
 // Expression parser - evaluates expressions with variables and basic math
@@ -117,26 +117,26 @@ function getAllInputs() {
       waist: getVal('waist'),
       hemline: getVal('hemline')
     },
-    // Ease variables (px) - support expressions
+    // Ease variables (cm input, converted to px: ×10)
     ease: {
-      hip_ease: getExprValue('hip_ease'),
-      x_center_offset: getExprValue('x_center_offset'),
-      crotch_ease: getExprValue('crotch_ease'),
-      front_crotch_extension: getExprValue('front_crotch_extension'),
-      back_crotch_extension: getExprValue('back_crotch_extension'),
-      front_rise_x: getExprValue('front_rise_x'),
-      front_rise_y: getExprValue('front_rise_y'),
-      back_rise: getExprValue('back_rise'),
-      back_waist_offset: getExprValue('back_waist_offset'),
-      front_hem_ease: getExprValue('front_hem_ease'),
-      back_hem_ease: getExprValue('back_hem_ease'),
-      front_knee_ease: getExprValue('front_knee_ease'),
-      back_knee_ease: getExprValue('back_knee_ease'),
-      sideseam_hip_ease: getExprValue('sideseam_hip_ease'),
-      back_inseam_hip_offset_x: getExprValue('back_inseam_hip_offset_x'),
-      back_inseam_hip_offset_y: getExprValue('back_inseam_hip_offset_y'),
-      back_sideseam_thigh_offset_x: getExprValue('back_sideseam_thigh_offset_x'),
-      back_sideseam_thigh_offset_y: getExprValue('back_sideseam_thigh_offset_y')
+      hip_ease: getExprValue('hip_ease') * 10,
+      x_center_offset: getExprValue('x_center_offset') * 10,
+      crotch_ease: getExprValue('crotch_ease') * 10,
+      front_crotch_extension: getExprValue('front_crotch_extension') * 10,
+      back_crotch_extension: getExprValue('back_crotch_extension') * 10,
+      front_rise_x: getExprValue('front_rise_x') * 10,
+      front_rise_y: getExprValue('front_rise_y') * 10,
+      back_rise: getExprValue('back_rise') * 10,
+      back_waist_offset: getExprValue('back_waist_offset') * 10,
+      front_hem_ease: getExprValue('front_hem_ease') * 10,
+      back_hem_ease: getExprValue('back_hem_ease') * 10,
+      front_knee_ease: getExprValue('front_knee_ease') * 10,
+      back_knee_ease: getExprValue('back_knee_ease') * 10,
+      sideseam_hip_ease: getExprValue('sideseam_hip_ease') * 10,
+      back_inseam_hip_offset_x: getExprValue('back_inseam_hip_offset_x') * 10,
+      back_inseam_hip_offset_y: getExprValue('back_inseam_hip_offset_y') * 10,
+      back_sideseam_thigh_offset_x: getExprValue('back_sideseam_thigh_offset_x') * 10,
+      back_sideseam_thigh_offset_y: getExprValue('back_sideseam_thigh_offset_y') * 10
     },
     // Bezier curve variables
     curves: {
