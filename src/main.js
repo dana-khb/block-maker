@@ -485,8 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadStatus.hidden = true
 
       // Track download event in Google Analytics
-      if (typeof gtag === 'function') {
-        gtag('event', 'pdf_download', { event_category: 'export' })
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'pdf_download', { event_category: 'export' })
       }
     } catch (err) {
       console.error('PDF generation error:', err)
